@@ -1,0 +1,13 @@
+{
+  "name": "fleet-telemetry-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Linting for the dashboard JavaScript",
+  "scripts": {
+    "lint": "eslint dashboard"
+  },
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0"
+  }
+}

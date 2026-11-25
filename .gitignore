@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/.terraform.lock.hcl
+infra/terraform.tfvars
+# saved plans contain secrets (HMAC key, device private key)
+infra/tfplan
+*.tfplan
+infra/build/
+
+# Secrets created by terraform (certificates, HMAC key) - NEVER commit
+simulator/generated/
+dashboard/config.cloud.js

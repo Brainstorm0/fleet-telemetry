@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleet Telemetry - Live Operations</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">&#9673;</span>
+      <div>
+        <h1>Fleet Telemetry</h1>
+        <p class="sub">Real-time cold-chain monitoring &amp; predictive anomaly detection</p>
+      </div>
+    </div>
+    <div class="conn" id="conn"><span class="dot"></span><span id="connText">Connecting...</span></div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><span class="label">Vehicles online</span><span class="value" id="kpiVehicles">0</span></div>
+    <div class="kpi"><span class="label">Messages / min</span><span class="value" id="kpiRate">0</span></div>
+    <div class="kpi"><span class="label">Avg cargo temp</span><span class="value" id="kpiTemp">--</span></div>
+    <div class="kpi"><span class="label">Alerts (last 15 min)</span><span class="value" id="kpiAlerts">0</span></div>
+    <div class="kpi"><span class="label">End-to-end latency</span><span class="value" id="kpiLatency">--</span></div>
+  </section>
+
+  <main class="grid">
+    <section class="panel map-panel">
+      <div class="panel-head"><h2>Live map</h2><span class="hint">Click a truck to see its temperature trend</span></div>
+      <div id="map"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Vehicles</h2></div>
+      <table class="vehicles">
+        <thead><tr><th>ID</th><th>Status</th><th>Cargo</th><th>Forecast</th><th>Speed</th><th>Engine</th><th>Fuel</th></tr></thead>
+        <tbody id="vehicleRows"><tr><td colspan="7" class="empty">Waiting for telemetry...</td></tr></tbody>
+      </table>
+    </section>
+
+    <section class="panel chart-panel">
+      <div class="panel-head"><h2>Cargo temperature - <span id="chartVehicle">select a vehicle</span></h2>
+        <span class="hint">Dashed line = 8&deg;C limit, hollow point = trend forecast</span></div>
+      <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Alert feed</h2></div>
+      <ul class="alerts" id="alertList"><li class="empty">No alerts yet</li></ul>
+    </section>
+  </main>
+
+  <footer>Mode: <span id="modeText">-</span> &middot; Data: AWS IoT Core / Kinesis &rarr; Lambda &rarr; DynamoDB &rarr; WebSocket</footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python lint + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Flake8
+        run: flake8
+      - name: PyTest
+        run: pytest -v
+
+  javascript:
+    name: ESLint (dashboard)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npm run lint
+
+  terraform:
+    name: Terraform fmt / validate / tflint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+      - name: terraform validate
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - uses: terraform-linters/setup-tflint@v4
+      - name: tflint
+        run: |
+          tflint --init
+          tflint
+
+  # Runs only on pushes to main, and only after you set DEPLOY_ENABLED=true
+  # and the AWS secrets (see the guide, Part F). Learner Lab keys expire every
+  # few hours, so update the three secrets at the start of each lab session.
+  deploy:
+    name: Deploy code to AWS
+    needs: [python, javascript, terraform]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      PROJECT: ${{ vars.PROJECT || 'fleet' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Update Lambda functions
+        run: |
+          set -e
+          for pair in processor:telemetry-processor connections:ws-connections api:rest-api site:dashboard-site; do
+            dir=${pair%%:*}; fn="$PROJECT-${pair##*:}"
+            (cd lambdas/$dir && zip -qr ../../$dir.zip . -x '__pycache__/*')
+            aws lambda update-function-code --function-name "$fn" --zip-file "fileb://$dir.zip" --publish > /dev/null
+            aws lambda wait function-updated --function-name "$fn"
+            echo "Updated $fn"
+          done
+      - name: Upload dashboard to S3
+        run: |
+          aws s3 sync dashboard "s3://${{ vars.DASHBOARD_BUCKET }}" \
+            --exclude "config.js" --exclude "config.cloud.js" --delete \
+            --cache-control "max-age=60"
+      - name: Invalidate CloudFront cache
+        if: vars.CLOUDFRONT_ID != ''
+        run: aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_ID }}" --paths "/*"
+      - name: Smoke test the live API
+        if: vars.REST_API_URL != ''
+        run: |
+          curl -fsS "${{ vars.REST_API_URL }}/health"
+          curl -fsS -o /dev/null "${{ vars.REST_API_URL }}/"   # dashboard page served by the site Lambda
+          echo "Dashboard OK"

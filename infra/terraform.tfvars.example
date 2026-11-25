@@ -1,0 +1,8 @@
+# Copy this file to terraform.tfvars and edit.
+region      = "us-east-1"
+project     = "fleet"
+alert_email = "your.email@example.com"   # you will get a confirmation mail - click it!
+
+# Set to false if your Learner Lab account gives errors for these services
+enable_iot        = true
+enable_cloudfront = true

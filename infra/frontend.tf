@@ -9,8 +9,7 @@
 # so that resource can never be created or refreshed in the lab. Every other
 # bucket setting below is still managed by Terraform.
 locals {
-  dashboard_bucket     = "${local.name}-dashboard-${data.aws_caller_identity.current.account_id}-${local.suffix}"
-  dashboard_bucket_arn = "arn:aws:s3:::${local.dashboard_bucket}"
+  dashboard_bucket = "${local.name}-dashboard-${data.aws_caller_identity.current.account_id}-${local.suffix}"
 }
 
 resource "terraform_data" "dashboard_bucket" {
